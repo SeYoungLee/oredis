@@ -220,7 +220,7 @@ password|when redis server require password use this option
 timeout|pass to UTL_TCP.OPEN_CONNECTION()
 inbuffersize|pass to UTL_TCP.OPEN_CONNECTION()
 outbuffersize|pass to UTL_TCP.OPEN_CONNECTION()
-readSlave|Enable read queries for connections to Redis cluster slave nodes.
+readSlave|Enable read queries for connections to Redis cluster slave nodes. To read from slave nodes, you also need to set the 'preferNodeType' param  to 'S'.Read APIs and Exec() have 'preferNodeType' param. This instruction is not absolute. If there is no available salve node, Oredis try to read from master node automatically.
 
 ###Example : 
 ```
