@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE OREDIS_TCP_CONNECTION AS OBJECT
+CREATE OR REPLACE TYPE OREDIS_TCP_CONNECTION FORCE AS OBJECT
 (
     remote_host   VARCHAR2(255),   -- Remote host name
     remote_port   NUMBER,     -- Remote port number
