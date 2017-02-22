@@ -63,13 +63,21 @@ END;
 
 <br>
 #Install and Update 
+###Oracle 11g :
 1. Download all files 
 2. Login to oracle as redis client user
 3. Execute 'install_oredis.sql'
+4. When update, download files and just execute 'install_oredis.sql'
 ```
 sql>@install_oredis.sql
 ```
-If this is the first installation on Oracle 10g, execute 'install_oredis_10g.sql'
+
+###Oracle 10g :
+1. Download all files 
+2. Login to oracle as redis client user
+3. Execute 'install_oredis_10g.sql'
+4. When update, drop all the oredis packages and types and execute 'install_oredis_10g.sql'
+
 ```
 sql>@install_oredis_10g.sql
 ```
