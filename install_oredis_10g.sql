@@ -17,7 +17,7 @@ prompt
 prompt Creating type OREDIS_RESP_ITEM
 prompt ==============================
 prompt
-CREATE OR REPLACE TYPE OREDIS_RESP_ITEM FORCE IS OBJECT (
+CREATE OR REPLACE TYPE OREDIS_RESP_ITEM IS OBJECT (
     type NUMBER,      -- PKG_OREDIS.STRING, PKG_OREDIS.INTEGER...  STRING : 1, ARRAY : 2, INTEGER : 3, NIL : 4,  STATUS : 5, ERROR : 6, RAW : 7
     str VARCHAR2(32767),
     int NUMBER
@@ -35,7 +35,7 @@ prompt
 prompt Creating type OREDIS_RESP
 prompt =========================
 prompt
-CREATE OR REPLACE TYPE OREDIS_RESP FORCE IS OBJECT (
+CREATE OR REPLACE TYPE OREDIS_RESP IS OBJECT (
     type NUMBER,    -- PKG_OREDIS.STRING, PKG_OREDIS.INTEGER... STRING : 1, ARRAY : 2, INTEGER : 3, NIL : 4,  STATUS : 5, ERROR : 6, RAW : 7
     item_cnt NUMBER,
     item OREDIS_RESP_ITEM_TABLE,
@@ -282,7 +282,7 @@ prompt
 prompt Creating type OREDIS
 prompt ====================
 prompt
-CREATE OR REPLACE TYPE OREDIS FORCE AS OBJECT
+CREATE OR REPLACE TYPE OREDIS AS OBJECT
 (
   -- Author  : LSY
   -- Created : 2017-01-03  9:53:27 9:53:27
@@ -364,7 +364,7 @@ prompt
 prompt Creating type OREDIS_NODE
 prompt =========================
 prompt
-create or replace type OREDIS_NODE FORCE AS OBJECT
+create or replace type OREDIS_NODE AS OBJECT
 (
   NODEID    VARCHAR2(100),
   TYPE      VARCHAR(10),   -- PKG_OREDIS.MASTER_NODE_TYPE    PKG_OREDIS.SLAVE_NODE_TYPE
@@ -400,7 +400,7 @@ prompt
 prompt Creating type OREDIS_MASTER_NODE
 prompt ================================
 prompt
-CREATE OR REPLACE TYPE OREDIS_MASTER_NODE force IS OBJECT (
+CREATE OR REPLACE TYPE OREDIS_MASTER_NODE IS OBJECT (
     NODEID    VARCHAR2(100),
     NODE      OREDIS_NODE,
     SLAVES    OREDIS_NODE_TABLE,
@@ -435,7 +435,7 @@ prompt
 prompt Creating type OREDIS_CLUSTER_MAP
 prompt ================================
 prompt
-CREATE OR REPLACE TYPE OREDIS_CLUSTER_MAP FORCE AS OBJECT (
+CREATE OR REPLACE TYPE OREDIS_CLUSTER_MAP AS OBJECT (
     MASTER_NODES  OREDIS_MASTER_NODE_TABLE,
     
     CONSTRUCTOR FUNCTION OREDIS_CLUSTER_MAP(SELF IN OUT NOCOPY OREDIS_CLUSTER_MAP, p_config VARCHAR2) RETURN SELF AS RESULT,
