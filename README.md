@@ -299,12 +299,5 @@ v_response := redis_cluster.EXEC('SET ' || v_key1 || ' ' || '""abc""');
   
 
 <br>
-#Known Issue
-1. delay when can not connect to Redis Server<br>
-When the Redis server is not accessible UTL_TCP.OPEN_CONNECTION() hangs over 10 seconds.<br>
-I think we need another way to determine if the server is reachable.
-
-
-<br>
 #License
 Unless otherwise noted, the source files are distributed under the MIT License found in the LICENSE.txt file.
