@@ -68,58 +68,58 @@ END SEND_COMMAND;
 
 
 /* Extract single Resoponse from TCP Stream.*/
-FUNCTION RECV_RESP(p_con UTL_TCP.CONNECTION) RETURN VARCHAR2 IS 
+FUNCTION RECV_RESP(p_con UTL_TCP.CONNECTION) RETURN VARCHAR2 IS
   v_con   UTL_TCP.CONNECTION;
   v_resp_line VARCHAR2(32767);
   v_resp_lines VARCHAR2(32767);
   v_type char(1);
   v_resp_item_cnt PLS_INTEGER;
+  v_str_resp_val VARCHAR2(32767);
+  v_str_resp_len PLS_INTEGER;
 BEGIN
-  
+
   v_con := p_con;
-  
+
   v_resp_line := UTL_TCP.GET_LINE(v_con);         -- if v_resp_line > 32767
-    
+
   v_type := SUBSTRB(v_resp_line, 1, 1);
-  
-  --When BLPOP timeouted return *-1 
+
+  --When BLPOP timeouted return *-1
   IF (v_resp_line = '$-1' || PKG_OREDIS.NEWLINE) OR (v_resp_line = '*-1' || PKG_OREDIS.NEWLINE) THEN  -- NIL  returned
     RETURN '$-1' || PKG_OREDIS.NEWLINE;
   END IF;
-    
+
   IF v_type IN ('+', '-', ':') THEN
     v_resp_lines := v_resp_line;                                              -- if v_resp_line > 32767
   ELSIF v_type IN ('$') THEN
     v_resp_lines := v_resp_line;                                              -- if v_resp_line > 32767
-    v_resp_lines := v_resp_lines || UTL_TCP.GET_LINE(v_con, peek => FALSE);     
+    v_str_resp_len := TO_NUMBER(SUBSTRB(v_resp_lines, 2, LENGTHB(v_resp_lines) - 3));
+        
+    v_str_resp_val := UTL_TCP.GET_LINE(v_con, peek => FALSE);
     
-    v_type := '';
-    WHILE UTL_TCP.AVAILABLE(v_con) > 0 AND v_type NOT IN ('+', '-', ':', '$', '*') LOOP -- string value can be multi line. Extract all lines until next reply symbol
-     v_resp_line := UTL_TCP.GET_LINE(v_con, remove_crlf => TRUE, peek => TRUE);         -- if v_resp_line > 32767    
-     v_type := SUBSTRB(v_resp_line, 1, 1);
-     
-     IF v_type NOT IN ('+', '-', ':', '$', '*') THEN
-       v_resp_lines := v_resp_lines || UTL_TCP.GET_LINE(v_con, peek => FALSE);
-     END IF;
+    WHILE LENGTHB(v_str_resp_val) < v_str_resp_len LOOP
+      v_str_resp_val := v_str_resp_val || UTL_TCP.GET_LINE(v_con);
     END LOOP;
     
+    v_resp_lines := v_resp_lines || v_str_resp_val;
+
   ELSIF v_type IN ('*') THEN
-    v_resp_item_cnt := TO_NUMBER(SUBSTRB(REPLACE(v_resp_line, NEWLINE, ''), 2));   
-    
+    v_resp_item_cnt := TO_NUMBER(SUBSTRB(REPLACE(v_resp_line, NEWLINE, ''), 2));
+
     v_resp_lines := v_resp_line;                                     -- if v_resp_line > 32767
-    
-    WHILE v_resp_item_cnt > 0 LOOP 
-      v_resp_lines := v_resp_lines || RECV_RESP(v_con);              -- if v_resp_lines > 32767  
+
+    WHILE v_resp_item_cnt > 0 LOOP
+      v_resp_lines := v_resp_lines || RECV_RESP(v_con);              -- if v_resp_lines > 32767
       v_resp_item_cnt := v_resp_item_cnt - 1;
     END LOOP;
-    
+
   END IF;
-  
+
   RETURN v_resp_lines;
-  
+
 EXCEPTION
     WHEN OTHERS THEN
-      RAISE;   
+      RAISE;
 END RECV_RESP;
 
 
