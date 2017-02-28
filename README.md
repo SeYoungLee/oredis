@@ -150,6 +150,9 @@ ZADD|ZREM|ZCARD|ZRANGE|ZRANGEBYSCORE|ZRANK|ZSCORE
 ---|---|---|---|---|---|---
 
 
+###OTHER : <BR>
+KEYS
+
 
 <br>
 #Exec() and Exec_async()
