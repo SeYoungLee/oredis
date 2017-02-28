@@ -242,16 +242,18 @@ END PACK_COMMAND;
 
 FUNCTION CREATE_RESPONSE(p_resp_str IN OUT NOCOPY VARCHAR2) RETURN OREDIS_RESP IS
   v_type VARCHAR2(20);
+  v_type_item VARCHAR2(20);
  
   v_redis_response OREDIS_RESP;
   
-  v_idx NUMBER;  
-  v_item_cnt NUMBER;
+  v_new_line_idx PLS_INTEGER;  
+  v_item_cnt PLS_INTEGER;
   
-  v_prev_item_idx NUMBER;
-  v_cur_item_idx NUMBER := 1;
+  v_prev_item_idx PLS_INTEGER;
+  v_cur_item_idx PLS_INTEGER := 1;
   
-  v_resp_item VARCHAR2(32767);
+  v_resp_item VARCHAR2(32767);  
+  v_str_resp_len PLS_INTEGER;
 BEGIN
   
   v_type := SUBSTRB(p_resp_str, 1, 1);  
@@ -283,27 +285,46 @@ BEGIN
     
   ELSIF v_type IN ('*') THEN
     
-    v_idx := INSTRB(p_resp_str, NEWLINE);
-    v_item_cnt := TO_NUMBER(SUBSTRB(p_resp_str, 2, v_idx - 2));
+    v_new_line_idx := INSTRB(p_resp_str, NEWLINE);
+    v_item_cnt := TO_NUMBER(SUBSTRB(p_resp_str, 2, v_new_line_idx - 2));
             
     v_redis_response := NEW OREDIS_RESP(NULL, v_item_cnt, OREDIS_RESP_ITEM_TABLE(), NULL, NULL);  
     v_redis_response.TYPE := REPLY_ARRAY;  
     
-    v_prev_item_idx := REGEXP_INSTR(p_resp_str, '[+:$]'); 
+    v_prev_item_idx := REGEXP_INSTR(p_resp_str, NEWLINE || '[+:$]') + 2;
+    v_type_item := SUBSTRB(p_resp_str, v_prev_item_idx, 1);
     
     FOR i IN 1..v_item_cnt LOOP
       
-      v_cur_item_idx := REGEXP_INSTR(p_resp_str, '[+:$]', v_prev_item_idx + 1); 
-      
-      IF v_cur_item_idx <> 0 THEN
-        v_resp_item := SUBSTRB(p_resp_str, v_prev_item_idx, v_cur_item_idx - v_prev_item_idx);   -- if v_response > 32767
+      IF v_type_item = '+' OR v_type_item = ':' THEN
+        v_cur_item_idx := REGEXP_INSTR(p_resp_str, NEWLINE || '[+:$]', v_prev_item_idx + 1) + 2; 
+        
+        IF v_cur_item_idx > 2 THEN
+          v_resp_item := SUBSTRB(p_resp_str, v_prev_item_idx, v_cur_item_idx - v_prev_item_idx);   -- if v_response > 32767
+          v_redis_response.item.EXTEND;
+          v_redis_response.item(i) := CREATE_RESPONSE_ITEM(v_resp_item);
+          
+          v_prev_item_idx := v_cur_item_idx;
+          v_type_item := SUBSTRB(p_resp_str, v_prev_item_idx, 1);
+        ELSE
+          v_resp_item := SUBSTRB(p_resp_str, v_prev_item_idx);
+          v_redis_response.item.EXTEND;
+          v_redis_response.item(i) := CREATE_RESPONSE_ITEM(v_resp_item);
+        END IF;
+      ELSIF v_type_item = '$' THEN
+        v_new_line_idx := INSTRB(p_resp_str, NEWLINE, v_prev_item_idx);
+        v_str_resp_len := TO_NUMBER(SUBSTRB(p_resp_str, v_prev_item_idx + 1, v_new_line_idx - v_prev_item_idx - 1));
+        
+        v_cur_item_idx := v_new_line_idx + v_str_resp_len + 4;
+        
+        v_resp_item := SUBSTRB(p_resp_str, v_prev_item_idx, v_cur_item_idx - v_prev_item_idx); 
         v_redis_response.item.EXTEND;
         v_redis_response.item(i) := CREATE_RESPONSE_ITEM(v_resp_item);
+        
         v_prev_item_idx := v_cur_item_idx;
+        v_type_item := SUBSTRB(p_resp_str, v_prev_item_idx, 1);
       ELSE
-        v_resp_item := SUBSTRB(p_resp_str, v_prev_item_idx);
-        v_redis_response.item.EXTEND;
-        v_redis_response.item(i) := CREATE_RESPONSE_ITEM(v_resp_item);
+        RAISE_APPLICATION_ERROR(-20208, 'Invalid response string! [ ' || p_resp_str || ']', TRUE);  --E_PROTOCOL
       END IF;
       
     END LOOP;
