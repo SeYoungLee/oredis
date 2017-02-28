@@ -1,8 +1,3 @@
-------------------------------------------------------
--- Export file for user UPAMGR@PUMES2_NEW           --
--- Created by LSY on 2017-02-22,  14:43:43 14:43:43 --
-------------------------------------------------------
-
 set define off
 spool install_oredis_10g.log
 
@@ -187,7 +182,7 @@ CREATE OR REPLACE PACKAGE PKG_OREDIS IS
   
   NOT_SUPPORTED_COMMAND Varchar2Table := Varchar2Table(
 'BGREWRITEAOF', 'BGSAVE',    'CLIENT',      'CONFIG', 
-'DEBUG',        'DUMP',      'EVAL',        'EVALSHA',      'KEYS',   
+'DEBUG',        'DUMP',      'EVAL',        'EVALSHA',  
 'LASTSAVE',     'MIGRATE',   'MONITOR',     'MOVE',         'OBJECT',  
 'PSUBSCRIBE',   'PUBSUB',    'PUBLISH',     'PUNSUBSCRIBE', 'QUIT', 
 'SAVE',         'SUBSCRIBE', 'SCRIPT',      'SHUTDOWN',     'SLAVEOF', 'SYNC',
@@ -288,7 +283,7 @@ CREATE OR REPLACE TYPE OREDIS AS OBJECT
   -- Created : 2017-01-03  9:53:27 9:53:27
   -- Purpose : 
   
-  CONNECTION   OREDIS_TCP_CONNECTION,
+  CONNECTION   OREDIS_TCP_CONNECTION, 
   ASYNC_CMD_COUNT NUMBER,
   
   CONSTRUCTOR FUNCTION OREDIS(SELF IN OUT NOCOPY OREDIS, 
@@ -353,7 +348,8 @@ CREATE OR REPLACE TYPE OREDIS AS OBJECT
   MEMBER FUNCTION ZRANGE(self IN OUT NOCOPY OREDIS, p_key VARCHAR2, p_start NUMBER, p_end NUMBER) RETURN OREDIS_RESP,
   MEMBER FUNCTION ZRANGEBYSCORE(self IN OUT NOCOPY OREDIS, p_key VARCHAR2, p_start VARCHAR2, p_end VARCHAR2) RETURN OREDIS_RESP,
   MEMBER FUNCTION ZRANK(self IN OUT NOCOPY OREDIS, p_key VARCHAR2, p_member VARCHAR2) RETURN OREDIS_RESP,
-  MEMBER FUNCTION ZSCORE(self IN OUT NOCOPY OREDIS, p_key VARCHAR2, p_member VARCHAR2) RETURN OREDIS_RESP
+  MEMBER FUNCTION ZSCORE(self IN OUT NOCOPY OREDIS, p_key VARCHAR2, p_member VARCHAR2) RETURN OREDIS_RESP,
+  MEMBER FUNCTION KEYS(self IN OUT NOCOPY OREDIS, p_pattern VARCHAR2) RETURN OREDIS_RESP
   
   
       
@@ -530,7 +526,8 @@ CREATE OR REPLACE TYPE OREDIS_CLUSTER AS OBJECT (
   MEMBER FUNCTION ZRANGE(self IN OUT NOCOPY OREDIS_CLUSTER, p_key VARCHAR2, p_start NUMBER, p_end NUMBER, p_prefer_node_type VARCHAR2 DEFAULT 'M') RETURN OREDIS_RESP,
   MEMBER FUNCTION ZRANGEBYSCORE(self IN OUT NOCOPY OREDIS_CLUSTER, p_key VARCHAR2, p_start VARCHAR2, p_end VARCHAR2, p_prefer_node_type VARCHAR2 DEFAULT 'M') RETURN OREDIS_RESP,
   MEMBER FUNCTION ZRANK(self IN OUT NOCOPY OREDIS_CLUSTER, p_key VARCHAR2, p_member VARCHAR2, p_prefer_node_type VARCHAR2 DEFAULT 'M') RETURN OREDIS_RESP,
-  MEMBER FUNCTION ZSCORE(self IN OUT NOCOPY OREDIS_CLUSTER, p_key VARCHAR2, p_member VARCHAR2, p_prefer_node_type VARCHAR2 DEFAULT 'M') RETURN OREDIS_RESP
+  MEMBER FUNCTION ZSCORE(self IN OUT NOCOPY OREDIS_CLUSTER, p_key VARCHAR2, p_member VARCHAR2, p_prefer_node_type VARCHAR2 DEFAULT 'M') RETURN OREDIS_RESP,
+  MEMBER FUNCTION KEYS(self IN OUT NOCOPY OREDIS_CLUSTER, p_pattern VARCHAR2) RETURN OREDIS_RESP
     
     
   )
@@ -610,58 +607,58 @@ END SEND_COMMAND;
 
 
 /* Extract single Resoponse from TCP Stream.*/
-FUNCTION RECV_RESP(p_con UTL_TCP.CONNECTION) RETURN VARCHAR2 IS 
+FUNCTION RECV_RESP(p_con UTL_TCP.CONNECTION) RETURN VARCHAR2 IS
   v_con   UTL_TCP.CONNECTION;
   v_resp_line VARCHAR2(32767);
   v_resp_lines VARCHAR2(32767);
   v_type char(1);
   v_resp_item_cnt PLS_INTEGER;
+  v_str_resp_val VARCHAR2(32767);
+  v_str_resp_len PLS_INTEGER;
 BEGIN
-  
+
   v_con := p_con;
-  
+
   v_resp_line := UTL_TCP.GET_LINE(v_con);         -- if v_resp_line > 32767
-    
+
   v_type := SUBSTRB(v_resp_line, 1, 1);
-  
-  --When BLPOP timeouted return *-1 
+
+  --When BLPOP timeouted return *-1
   IF (v_resp_line = '$-1' || PKG_OREDIS.NEWLINE) OR (v_resp_line = '*-1' || PKG_OREDIS.NEWLINE) THEN  -- NIL  returned
     RETURN '$-1' || PKG_OREDIS.NEWLINE;
   END IF;
-    
+
   IF v_type IN ('+', '-', ':') THEN
     v_resp_lines := v_resp_line;                                              -- if v_resp_line > 32767
   ELSIF v_type IN ('$') THEN
     v_resp_lines := v_resp_line;                                              -- if v_resp_line > 32767
-    v_resp_lines := v_resp_lines || UTL_TCP.GET_LINE(v_con, peek => FALSE);     
+    v_str_resp_len := TO_NUMBER(SUBSTRB(v_resp_lines, 2, LENGTHB(v_resp_lines) - 3));
+        
+    v_str_resp_val := UTL_TCP.GET_LINE(v_con, peek => FALSE);
     
-    v_type := '';
-    WHILE UTL_TCP.AVAILABLE(v_con) > 0 AND v_type NOT IN ('+', '-', ':', '$', '*') LOOP -- string value can be multi line. Extract all lines until next reply symbol
-     v_resp_line := UTL_TCP.GET_LINE(v_con, remove_crlf => TRUE, peek => TRUE);         -- if v_resp_line > 32767    
-     v_type := SUBSTRB(v_resp_line, 1, 1);
-     
-     IF v_type NOT IN ('+', '-', ':', '$', '*') THEN
-       v_resp_lines := v_resp_lines || UTL_TCP.GET_LINE(v_con, peek => FALSE);
-     END IF;
+    WHILE LENGTHB(v_str_resp_val) < v_str_resp_len LOOP
+      v_str_resp_val := v_str_resp_val || UTL_TCP.GET_LINE(v_con);
     END LOOP;
     
+    v_resp_lines := v_resp_lines || v_str_resp_val;
+
   ELSIF v_type IN ('*') THEN
-    v_resp_item_cnt := TO_NUMBER(SUBSTRB(REPLACE(v_resp_line, NEWLINE, ''), 2));   
-    
+    v_resp_item_cnt := TO_NUMBER(SUBSTRB(REPLACE(v_resp_line, NEWLINE, ''), 2));
+
     v_resp_lines := v_resp_line;                                     -- if v_resp_line > 32767
-    
-    WHILE v_resp_item_cnt > 0 LOOP 
-      v_resp_lines := v_resp_lines || RECV_RESP(v_con);              -- if v_resp_lines > 32767  
+
+    WHILE v_resp_item_cnt > 0 LOOP
+      v_resp_lines := v_resp_lines || RECV_RESP(v_con);              -- if v_resp_lines > 32767
       v_resp_item_cnt := v_resp_item_cnt - 1;
     END LOOP;
-    
+
   END IF;
-  
+
   RETURN v_resp_lines;
-  
+
 EXCEPTION
     WHEN OTHERS THEN
-      RAISE;   
+      RAISE;
 END RECV_RESP;
 
 
@@ -784,16 +781,18 @@ END PACK_COMMAND;
 
 FUNCTION CREATE_RESPONSE(p_resp_str IN OUT NOCOPY VARCHAR2) RETURN OREDIS_RESP IS
   v_type VARCHAR2(20);
+  v_type_item VARCHAR2(20);
  
   v_redis_response OREDIS_RESP;
   
-  v_idx NUMBER;  
-  v_item_cnt NUMBER;
+  v_new_line_idx PLS_INTEGER;  
+  v_item_cnt PLS_INTEGER;
   
-  v_prev_item_idx NUMBER;
-  v_cur_item_idx NUMBER := 1;
+  v_prev_item_idx PLS_INTEGER;
+  v_cur_item_idx PLS_INTEGER := 1;
   
-  v_resp_item VARCHAR2(32767);
+  v_resp_item VARCHAR2(32767);  
+  v_str_resp_len PLS_INTEGER;
 BEGIN
   
   v_type := SUBSTRB(p_resp_str, 1, 1);  
@@ -825,27 +824,46 @@ BEGIN
     
   ELSIF v_type IN ('*') THEN
     
-    v_idx := INSTRB(p_resp_str, NEWLINE);
-    v_item_cnt := TO_NUMBER(SUBSTRB(p_resp_str, 2, v_idx - 2));
+    v_new_line_idx := INSTRB(p_resp_str, NEWLINE);
+    v_item_cnt := TO_NUMBER(SUBSTRB(p_resp_str, 2, v_new_line_idx - 2));
             
     v_redis_response := NEW OREDIS_RESP(NULL, v_item_cnt, OREDIS_RESP_ITEM_TABLE(), NULL, NULL);  
     v_redis_response.TYPE := REPLY_ARRAY;  
     
-    v_prev_item_idx := REGEXP_INSTR(p_resp_str, '[+:$]'); 
+    v_prev_item_idx := REGEXP_INSTR(p_resp_str, NEWLINE || '[+:$]') + 2;
+    v_type_item := SUBSTRB(p_resp_str, v_prev_item_idx, 1);
     
     FOR i IN 1..v_item_cnt LOOP
       
-      v_cur_item_idx := REGEXP_INSTR(p_resp_str, '[+:$]', v_prev_item_idx + 1); 
-      
-      IF v_cur_item_idx <> 0 THEN
-        v_resp_item := SUBSTRB(p_resp_str, v_prev_item_idx, v_cur_item_idx - v_prev_item_idx);   -- if v_response > 32767
+      IF v_type_item = '+' OR v_type_item = ':' THEN
+        v_cur_item_idx := REGEXP_INSTR(p_resp_str, NEWLINE || '[+:$]', v_prev_item_idx + 1) + 2; 
+        
+        IF v_cur_item_idx > 2 THEN
+          v_resp_item := SUBSTRB(p_resp_str, v_prev_item_idx, v_cur_item_idx - v_prev_item_idx);   -- if v_response > 32767
+          v_redis_response.item.EXTEND;
+          v_redis_response.item(i) := CREATE_RESPONSE_ITEM(v_resp_item);
+          
+          v_prev_item_idx := v_cur_item_idx;
+          v_type_item := SUBSTRB(p_resp_str, v_prev_item_idx, 1);
+        ELSE
+          v_resp_item := SUBSTRB(p_resp_str, v_prev_item_idx);
+          v_redis_response.item.EXTEND;
+          v_redis_response.item(i) := CREATE_RESPONSE_ITEM(v_resp_item);
+        END IF;
+      ELSIF v_type_item = '$' THEN
+        v_new_line_idx := INSTRB(p_resp_str, NEWLINE, v_prev_item_idx);
+        v_str_resp_len := TO_NUMBER(SUBSTRB(p_resp_str, v_prev_item_idx + 1, v_new_line_idx - v_prev_item_idx - 1));
+        
+        v_cur_item_idx := v_new_line_idx + v_str_resp_len + 4;
+        
+        v_resp_item := SUBSTRB(p_resp_str, v_prev_item_idx, v_cur_item_idx - v_prev_item_idx); 
         v_redis_response.item.EXTEND;
         v_redis_response.item(i) := CREATE_RESPONSE_ITEM(v_resp_item);
+        
         v_prev_item_idx := v_cur_item_idx;
+        v_type_item := SUBSTRB(p_resp_str, v_prev_item_idx, 1);
       ELSE
-        v_resp_item := SUBSTRB(p_resp_str, v_prev_item_idx);
-        v_redis_response.item.EXTEND;
-        v_redis_response.item(i) := CREATE_RESPONSE_ITEM(v_resp_item);
+        RAISE_APPLICATION_ERROR(-20208, 'Invalid response string! [ ' || p_resp_str || ']', TRUE);  --E_PROTOCOL
       END IF;
       
     END LOOP;
@@ -1171,7 +1189,7 @@ FUNCTION TEST_CLUSTER_BASIC RETURN VARCHAR2 IS
   
 BEGIN
         
-  redis_cluster := NEW OREDIS_CLUSTER('10.3.10.53:6379, 10.3.11.35:6379,readSlave=true'); --,TIMEOUT=1,inBufferSize=1000,outBufferSize=2000,password=pass
+  redis_cluster := NEW OREDIS_CLUSTER('10.3.10.52:6379, 10.3.11.35:6379,readSlave=true'); --,TIMEOUT=1,inBufferSize=1000,outBufferSize=2000,password=pass
   
   --v_response := redis_cluster.EXEC('MULTI '); -- not supported command test
   
@@ -1184,6 +1202,14 @@ BEGIN
   ASSERT_EQUAL(v_str_val1, '{BAR');
   v_str_val1 := redis_cluster.GET_HASH_KEY('FOO{BAR}{ZAP}');
   ASSERT_EQUAL(v_str_val1, 'BAR');*/
+  
+  v_response := redis_cluster.KEYS('*2017*');
+  
+  FOR i IN 1..v_response.ITEM_CNT LOOP
+    v_str_val1 := v_response.ITEM(i).STR;
+
+    DBMS_OUTPUT.PUT_LINE(v_str_val1);
+  END LOOP;
   
     
   v_key1 := 'myKEY1';
@@ -1728,6 +1754,15 @@ BEGIN
   v_response := redis.EXEC('PING');  
   
   v_plain_response := v_response.item(1).STR;
+  
+  
+  v_response := redis.KEYS('*2017*');
+  
+  FOR i IN 1..v_response.ITEM_CNT LOOP
+      v_plain_response := v_response.ITEM(i).STR;
+
+      DBMS_OUTPUT.PUT_LINE(v_plain_response);
+  END LOOP;
   
   redis.CLOSE;
     
@@ -2277,6 +2312,11 @@ BEGIN
   RETURN EXEC('ZSCORE ' || p_key || ' ' || p_member);
 END ZSCORE;
 
+MEMBER FUNCTION KEYS(self IN OUT NOCOPY OREDIS, p_pattern VARCHAR2) RETURN OREDIS_RESP IS
+BEGIN
+  RETURN EXEC('KEYS ' || p_pattern);
+END KEYS;
+
 /*------------------  API END ---------------------------*/
 
 
@@ -2287,7 +2327,7 @@ prompt
 prompt Creating type body OREDIS_CLUSTER
 prompt =================================
 prompt
-CREATE OR REPLACE TYPE BODY OREDIS_CLUSTER  IS
+CREATE OR REPLACE TYPE BODY OREDIS_CLUSTER IS
 
 /* OREDIS_CLUSTER Constructor. p_config can includes some cluster node addresses and options. 
    ex) '10.3.10.xxx:6379, 10.3.11.xxx:6379'
@@ -2759,6 +2799,11 @@ MEMBER FUNCTION ZSCORE(self IN OUT NOCOPY OREDIS_CLUSTER, p_key VARCHAR2, p_memb
 BEGIN
   RETURN EXEC('ZSCORE ' || p_key || ' ' || p_member, p_prefer_node_type);
 END ZSCORE;
+
+MEMBER FUNCTION KEYS(self IN OUT NOCOPY OREDIS_CLUSTER, p_pattern VARCHAR2) RETURN OREDIS_RESP IS
+BEGIN
+  RETURN EXEC('KEYS ' || p_pattern);
+END KEYS;
 
 /*------------------  API END ---------------------------*/
 
