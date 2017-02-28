@@ -105,7 +105,7 @@ CREATE OR REPLACE PACKAGE PKG_OREDIS IS
   
   NOT_SUPPORTED_COMMAND Varchar2Table := Varchar2Table(
 'BGREWRITEAOF', 'BGSAVE',    'CLIENT',      'CONFIG', 
-'DEBUG',        'DUMP',      'EVAL',        'EVALSHA',      'KEYS',   
+'DEBUG',        'DUMP',      'EVAL',        'EVALSHA',       
 'LASTSAVE',     'MIGRATE',   'MONITOR',     'MOVE',         'OBJECT',  
 'PSUBSCRIBE',   'PUBSUB',    'PUBLISH',     'PUNSUBSCRIBE', 'QUIT', 
 'SAVE',         'SUBSCRIBE', 'SCRIPT',      'SHUTDOWN',     'SLAVEOF', 'SYNC',
