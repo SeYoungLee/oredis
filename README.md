@@ -1,8 +1,8 @@
 # OREDIS
-OREDIS is a Redis client library for Oracle PL/SQL.<br>
-OREDIS is written in OOP style by using PL/SQL Object type.<br>
+OREDIS is a Redis client library for Oracle PL/SQL.
+OREDIS is written in OOP style by using PL/SQL Object type.
 (I think PL/SQL is not enough to be called true OOP.)
-<br><br>
+
 
 
 # Features
@@ -35,13 +35,12 @@ ROLE|SWAPDB|SELECT|SLOWLOG|WATCH
 UNWATCH|SCAN|SSCAN|HSCAN|ZSCAN
 
 
-<br>
 # Requirements
 * Oracle 10g or higher
 * Privilege to SYS.UTL_TCP package<br>
   Login as sys user and execute below<br>
 `sql>grant execute on UTL_TCP to username`
-<br>
+
 
 * Network Privilage when use oracle 11g or higer 
  (Refer to [Link1](https://docs.oracle.com/cd/B28359_01/appdev.111/b28419/d_networkacl_adm.htm#BABCJDGC) 
@@ -62,7 +61,6 @@ BEGIN
 END;
 ```
 
-<br>
 # Install and Update 
 ### Oracle 11g :
 1. Download all files 
@@ -84,7 +82,6 @@ sql>@install_oredis_10g.sql
 ```
 
 
-<br>
 # Simple Usage Example
 There are two ways to send commands to redis.
 * Use APIs (set_, get...)
@@ -115,7 +112,6 @@ BEGIN
 END;
 ```
 
-<br>
 # APIs
 Oredis presents some APIs to use Redis simply.<br>
 'SET' and 'EXISTS' are PL/SQL keyword, so we can't use them as a function name.
@@ -129,8 +125,8 @@ SET_|PUT|SETEX|GET|DEL|EXIST
 
 ### HASH :
 
-HSET|HGET|HDEL|HEXISTS 
----|---|---|---|---
+HSET|HGET|HDEL|HEXISTS
+---|---|---|---
 
 
 ### LIST :
