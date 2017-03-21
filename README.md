@@ -1,21 +1,22 @@
 # OREDIS
 OREDIS is a Redis client library for Oracle PL/SQL.
-OREDIS is written in OOP style by using PL/SQL Object type.
-(I think PL/SQL is not enough to be called true OOP.)
-
-
+OREDIS is written in OOP style by using PL/SQL Object type.<br/>
+(But it's not true OOP.)  
+<br/>    
 
 # Features
+  
 ## Support
 * Redis Cluster
 * Asynchronous command execution (Instead of Pipelining)
-
+   
 
 ## Not support
 * Sentinel
 * Pipelining
 * Pubish/Subscribe
-* Lua Scripting
+* Lua Scripting  
+   
 
 ## Not supported commands
 BGREWRITEAOF|BGSAVE|CLIENT|CONFIG|DEBUG
@@ -25,15 +26,15 @@ MONITOR|MOVE|OBJECT|PSUBSCRIBE|PUBSUB
 PUBLISH|PUNSUBSCRIBE|QUIT|SAVE|SUBSCRIBE
 SCRIPT|SHUTDOWN|SLAVEOF|SYNC|UNSUBSCRIBE
 WAIT||||
-
-
+  
+  
 ## Not supported commands in cluster environment
 BITOP | DBSIZE | DISCARD | EXEC | FLUSHALL
 ---|---|---|---|--- 
 FLUSHDB|INFO|MULTI|PING|RANDOMKEY
 ROLE|SWAPDB|SELECT|SLOWLOG|WATCH
 UNWATCH|SCAN|SSCAN|HSCAN|ZSCAN
-
+<br/> 
 
 # Requirements
 * Oracle 10g or higher
@@ -60,6 +61,7 @@ BEGIN
                                       host => '*'); 
 END;
 ```
+<br/> 
 
 # Install and Update 
 ### Oracle 11g :
@@ -80,7 +82,7 @@ sql>@install_oredis.sql
 ```
 sql>@install_oredis_10g.sql
 ```
-
+<br/> 
 
 # Simple Usage Example
 There are two ways to send commands to redis.
@@ -111,6 +113,7 @@ BEGIN
   redis.close();
 END;
 ```
+<br/> 
 
 # APIs
 Oredis presents some APIs to use Redis simply.<br>
@@ -149,8 +152,9 @@ ZADD|ZREM|ZCARD|ZRANGE|ZRANGEBYSCORE|ZRANK|ZSCORE
 
 ### OTHER : 
 KEYS
-
-
+<br/>
+<br/>
+  
 # Exec() and Exec_async()
 ## Exec()
 When you need to execute some complex commnads, use exec().<br>
@@ -176,7 +180,7 @@ BEGIN
   v_response := v_responses(1);
 END;
 ```
-
+<br/> 
 
 # Support Cluster
 In a cluster environment, use OREDIS_CLUSTER instead of OREDIS.
@@ -192,7 +196,8 @@ BEGIN
   redis_cluster.close();
 END;
 ```
-
+<br/> 
+  
 # Connection string
 The constructor of OREDIS and OREDIS_CLUSTER have one parameter 'p_config'(connection string).
 Of course, most important part of connetcion string is specifying redis host address.
@@ -227,6 +232,8 @@ readSlave|Enable read queries for connections to Redis cluster slave nodes. To r
 redis := new OREDIS('10.3.11.34:6379,password=1234,db=1,timeout=1,inBufferSize=1000');
 redis_cluster := new OREDIS_CLUSTER('10.3.10.10:6379, 10.3.11.10:6379,readSlave=true');
 ```
+<br/> 
+  
 
 # OREDIS_RESP
 OREDIS_RESP holds the response of Redis server.<br>
@@ -260,7 +267,7 @@ ELSE                               --REPLY_STRING, REPLY_NIL, REPLY_STATUS
   v_str_val1 := v_response.STR;
 END IF;
 ```
-
+<br/> 
 
 
 # Testing and Debugging
@@ -268,7 +275,7 @@ END IF;
 * OREDIS presents some ASSERT() functions to debug and test. Refer to 'PKG_OREDIS' and 'PKG_OREDIS_TEST' packages.  
 * OREDIS declares some user-defined exception and error number to define own error message. They are declared in spec of 'PKG_OREDIS'.
 * You can trace the call stack by examining DBMS_UTILITY.FORMAT_ERROR_BACKTRACE when exception occurs.
-
+<br/> 
 
 # Setting a value which has quotation marks or white spaces
 ```
@@ -287,11 +294,13 @@ v_response := redis_cluster.EXEC('SET ' || v_key1 || ' ' || '"''abc''"');  --SET
 --When SET a value wraped with Double Quotation("), wrap the value with double Double Quotation("") instead of (")
 v_response := redis_cluster.EXEC('SET ' || v_key1 || ' ' || '""abc""');
 ```
-
+<br/> 
+  
 # Tested Environment
   - Oracle 10g on Windows Server 2008(32bit), Redis 3.2.1 on Windows 7(64bit)
   - Oracle 11g on Windows Server 2012(64bit), Redis 3.2.1 on Windows Server 2012(64bit)
   - Oracle 11g on Windows Server 2012(64bit), Redis 3.2.6 on Ubuntu 14.04(64bit)
+<br/> 
   
 # License
 Unless otherwise noted, the source files are distributed under the MIT License found in the LICENSE.txt file.
