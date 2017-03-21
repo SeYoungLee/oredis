@@ -228,7 +228,6 @@ redis := new OREDIS('10.3.11.34:6379,password=1234,db=1,timeout=1,inBufferSize=1
 redis_cluster := new OREDIS_CLUSTER('10.3.10.10:6379, 10.3.11.10:6379,readSlave=true');
 ```
 
-<br>
 # OREDIS_RESP
 OREDIS_RESP holds the response of Redis server.<br>
 OREDIS_RESP has 5 attributes :
