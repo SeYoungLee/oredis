@@ -1,23 +1,23 @@
-#OREDIS
+# OREDIS
 OREDIS is a Redis client library for Oracle PL/SQL.<br>
 OREDIS is written in OOP style by using PL/SQL Object type.<br>
 (I think PL/SQL is not enough to be called true OOP.)
 <br><br>
 
 
-#Features
-##Support
+# Features
+## Support
 * Redis Cluster
 * Asynchronous command execution (Instead of Pipelining)
 
 
-##Not support
+## Not support
 * Sentinel
 * Pipelining
 * Pubish/Subscribe
 * Lua Scripting
 
-##Not supported commands
+## Not supported commands
 BGREWRITEAOF|BGSAVE|CLIENT|CONFIG|DEBUG
 ---|---|---|---|--- 
 DUMP|EVAL|EVALSHA|LASTSAVE|MIGRATE
@@ -27,7 +27,7 @@ SCRIPT|SHUTDOWN|SLAVEOF|SYNC|UNSUBSCRIBE
 WAIT||||
 
 
-##Not supported commands in cluster environment
+## Not supported commands in cluster environment
 BITOP | DBSIZE | DISCARD | EXEC | FLUSHALL
 ---|---|---|---|--- 
 FLUSHDB|INFO|MULTI|PING|RANDOMKEY
@@ -36,12 +36,13 @@ UNWATCH|SCAN|SSCAN|HSCAN|ZSCAN
 
 
 <br>
-#Requirements
+# Requirements
 * Oracle 10g or higher
 * Privilege to SYS.UTL_TCP package<br>
   Login as sys user and execute below<br>
 `sql>grant execute on UTL_TCP to username`
 <br>
+
 * Network Privilage when use oracle 11g or higer 
  (Refer to [Link1](https://docs.oracle.com/cd/B28359_01/appdev.111/b28419/d_networkacl_adm.htm#BABCJDGC) 
  [Link2](http://www.dba-oracle.com/t_11g_new_acls_plsql.htm))<br>
@@ -62,8 +63,8 @@ END;
 ```
 
 <br>
-#Install and Update 
-###Oracle 11g :
+# Install and Update 
+### Oracle 11g :
 1. Download all files 
 2. Login to oracle as redis client user
 3. Execute 'install_oredis.sql'
@@ -72,7 +73,7 @@ END;
 sql>@install_oredis.sql
 ```
 
-###Oracle 10g :
+### Oracle 10g :
 1. Download all files 
 2. Login to oracle as redis client user
 3. Execute 'install_oredis_10g.sql'
@@ -84,7 +85,7 @@ sql>@install_oredis_10g.sql
 
 
 <br>
-#Simple Usage Example
+# Simple Usage Example
 There are two ways to send commands to redis.
 * Use APIs (set_, get...)
 * Send command as in redis-cli by using exec() or exec_async()
@@ -115,57 +116,56 @@ END;
 ```
 
 <br>
-#APIs
+# APIs
 Oredis presents some APIs to use Redis simply.<br>
 'SET' and 'EXISTS' are PL/SQL keyword, so we can't use them as a function name.
 PUT() is same with SET_().
 
-###SIMPLE KEY : 
+### SIMPLE KEY : 
 
 SET_|PUT|SETEX|GET|DEL|EXIST 
 ---|---|---|---|---|---
 
 
-###HASH :
+### HASH :
 
 HSET|HGET|HDEL|HEXISTS 
 ---|---|---|---|---
 
 
-###LIST :
+### LIST :
 
 LPUSH|LPOP|RPUSH|RPOP|LRANGE
 ---|---|---|---|---
 
 
-###SET : 
+### SET : 
 
 SADD|SREM|SMEMBERS|SCARD
 ---|---|---|---
 
 
-###SORTED SET : 
+### SORTED SET : 
 
 ZADD|ZREM|ZCARD|ZRANGE|ZRANGEBYSCORE|ZRANK|ZSCORE
 ---|---|---|---|---|---|---
 
 
-###OTHER : <BR>
+### OTHER : 
 KEYS
 
 
-<br>
-#Exec() and Exec_async()
-##Exec()
+# Exec() and Exec_async()
+## Exec()
 When you need to execute some complex commnads, use exec().<br>
 And by using exec(), you can write your own APIs easily.
 ```
 v_response := redis.EXEC('MSET {user:1000}.fname Michael {user:1000}.lname Jackson');
 ```
-<br>
-##Exec_async()
+
+## Exec_async()
 Oredis does not support Pipelining, but you can gain similar benefits by using Exec_async().<br>
-Exec 
+
 ```
 DECLARE
   redis_cluster OREDIS_CLUSTER;
@@ -180,8 +180,9 @@ BEGIN
   v_response := v_responses(1);
 END;
 ```
-<br>
-#Support Cluster
+
+
+# Support Cluster
 In a cluster environment, use OREDIS_CLUSTER instead of OREDIS.
 
 ```
@@ -196,8 +197,7 @@ BEGIN
 END;
 ```
 
-<br>
-#Connection string
+# Connection string
 The constructor of OREDIS and OREDIS_CLUSTER have one parameter 'p_config'(connection string).
 Of course, most important part of connetcion string is specifying redis host address.
 You can specify host address like below : <br>
@@ -205,6 +205,7 @@ You can specify host address like below : <br>
 new OREDIS('127.0.0.1') --use default port 6379
 new OREDIS('127.0.0.1:6380')
 ```
+
 
 In cluster environment, you can specify some cluster node addresses in connection string.
 You don't need to list all the clster node addresses, only one available cluster node address is enough.
@@ -225,14 +226,14 @@ inbuffersize|pass to UTL_TCP.OPEN_CONNECTION()
 outbuffersize|pass to UTL_TCP.OPEN_CONNECTION()
 readSlave|Enable read queries for connections to Redis cluster slave nodes. To read from slave nodes, you also need to set the 'preferNodeType' param  to 'S'.Read APIs and Exec() have 'preferNodeType' param. This instruction is not absolute. If there is no available salve node, Oredis try to read from master node automatically.
 
-###Example : 
+### Example : 
 ```
 redis := new OREDIS('10.3.11.34:6379,password=1234,db=1,timeout=1,inBufferSize=1000');
 redis_cluster := new OREDIS_CLUSTER('10.3.10.10:6379, 10.3.11.10:6379,readSlave=true');
 ```
 
 <br>
-#OREDIS_RESP
+# OREDIS_RESP
 OREDIS_RESP holds the response of Redis server.<br>
 OREDIS_RESP has 5 attributes :
 
@@ -244,7 +245,7 @@ int|if the response value is number foramt, the value is converted to number typ
 item|if the response type is array, you can access all the item by this attr.<br>PL/SQL does not allows recrursive data structure, so it becames somewhat messy.<br>OREDIS_RESP_ITEM_TABLE is a array of OREDIS_RESP_ITEM. OREDIS_RESP_ITEM has 3 attributes 'type', 'str', 'int' like OREDIS_RESP
 item_cnt|item count
 
-###Example : 
+### Example : 
 ```
 IF v_response.TYPE = PKG_OREDIS.REPLY_ERROR THEN
   v_str_val1 := v_response.STR;
@@ -265,16 +266,16 @@ ELSE                               --REPLY_STRING, REPLY_NIL, REPLY_STATUS
 END IF;
 ```
 
-<br>
-#Testing and Debugging
+
+
+# Testing and Debugging
 * Modify 'PKG_OREDIS_TEST' package and run.
 * OREDIS presents some ASSERT() functions to debug and test. Refer to 'PKG_OREDIS' and 'PKG_OREDIS_TEST' packages.  
 * OREDIS declares some user-defined exception and error number to define own error message. They are declared in spec of 'PKG_OREDIS'.
 * You can trace the call stack by examining DBMS_UTILITY.FORMAT_ERROR_BACKTRACE when exception occurs.
 
 
-<br>
-#Setting a value which has quotation marks or white spaces
+# Setting a value which has quotation marks or white spaces
 ```
 --When SET a value includes White Space, wrap the value with double quotation(") 
 v_response := redis.EXEC('SET ' || v_key1 || ' ' || '" abc def "');  -- SET " abc def "
@@ -290,17 +291,14 @@ v_response := redis_cluster.EXEC('SET ' || v_key1 || ' ' || '"''abc''"');  --SET
 
 --When SET a value wraped with Double Quotation("), wrap the value with double Double Quotation("") instead of (")
 v_response := redis_cluster.EXEC('SET ' || v_key1 || ' ' || '""abc""');
-
 ```
 
-
-<br>
-#Tested Environment
+# Tested Environment
   - Oracle 10g on Windows Server 2008(32bit), Redis 3.2.1 on Windows 7(64bit)
   - Oracle 11g on Windows Server 2012(64bit), Redis 3.2.1 on Windows Server 2012(64bit)
   - Oracle 11g on Windows Server 2012(64bit), Redis 3.2.6 on Ubuntu 14.04(64bit)
   
-
-<br>
-#License
+# License
 Unless otherwise noted, the source files are distributed under the MIT License found in the LICENSE.txt file.
+
+
